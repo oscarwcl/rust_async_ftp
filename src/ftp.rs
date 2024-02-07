@@ -14,7 +14,7 @@ use tokio::io::{
 use tokio::net::{TcpStream, ToSocketAddrs};
 
 #[cfg(feature = "secure")]
-use tokio_rustls::{rustls::ClientConfig, rustls::ServerName, TlsConnector};
+use tokio_rustls::{rustls::pki_types::ServerName, rustls::ClientConfig, TlsConnector};
 
 use crate::data_stream::DataStream;
 use crate::status;
@@ -36,7 +36,7 @@ lazy_static::lazy_static! {
 pub struct FtpStream {
     reader: BufReader<DataStream>,
     #[cfg(feature = "secure")]
-    ssl_cfg: Option<(ClientConfig, ServerName)>,
+    ssl_cfg: Option<(ClientConfig, ServerName<'static>)>,
     welcome_msg: Option<String>,
 }
 
@@ -72,11 +72,11 @@ impl FtpStream {
     /// use std::convert::TryFrom;
     /// use std::path::Path;
     /// use async_ftp::FtpStream;
-    /// use tokio_rustls::rustls::{ClientConfig, RootCertStore, ServerName};
+    /// use tokio_rustls::rustls::{ClientConfig, RootCertStore, pki_types::ServerName};
     ///
     /// let mut root_store = RootCertStore::empty();
     /// // root_store.add_pem_file(...);
-    /// let conf = ClientConfig::builder().with_safe_defaults().with_root_certificates(root_store).with_no_client_auth();
+    /// let conf = ClientConfig::builder().with_root_certificates(root_store).with_no_client_auth();
     /// let domain = ServerName::try_from("www.cert-domain.com").expect("invalid DNS name");
     /// async {
     ///   let mut ftp_stream = FtpStream::connect("172.25.82.139:21").await.unwrap();
@@ -84,7 +84,11 @@ impl FtpStream {
     /// };
     /// ```
     #[cfg(feature = "secure")]
-    pub async fn into_secure(mut self, config: ClientConfig, domain: ServerName) -> Result<FtpStream> {
+    pub async fn into_secure(
+        mut self,
+        config: ClientConfig,
+        domain: ServerName<'static>,
+    ) -> Result<FtpStream> {
         // Ask the server to start securing data.
         self.write_str("AUTH TLS\r\n").await?;
         self.read_response(status::AUTH_OK).await?;
@@ -118,11 +122,11 @@ impl FtpStream {
     /// use std::convert::TryFrom;
     /// use std::path::Path;
     /// use async_ftp::FtpStream;
-    /// use tokio_rustls::rustls::{ClientConfig, RootCertStore, ServerName};
+    /// use tokio_rustls::rustls::{ClientConfig, RootCertStore, pki_types::ServerName};
     ///
     /// let mut root_store = RootCertStore::empty();
     /// // root_store.add_pem_file(...);
-    /// let conf = ClientConfig::builder().with_safe_defaults().with_root_certificates(root_store).with_no_client_auth();
+    /// let conf = ClientConfig::builder().with_root_certificates(root_store).with_no_client_auth();
     /// let domain = ServerName::try_from("www.cert-domain.com").expect("invalid DNS name");
     /// async {
     ///   let mut ftp_stream = FtpStream::connect("172.25.82.139:21").await.unwrap();
