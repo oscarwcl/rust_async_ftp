@@ -28,7 +28,7 @@ chrono = "0.4.11"
 
 tokio = { version = "1.0.1", features = ["net", "io-util"] }
 tokio-rustls = { version = "0.26.0", optional = true, default-features = false }
-pin-project = "1.0.0"
+pin-project-lite = "0.2.0"
 
 [dev-dependencies]
 tokio = { version = "1.0.1", features = ["macros", "rt"] }

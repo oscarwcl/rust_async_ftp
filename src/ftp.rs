@@ -48,7 +48,7 @@ impl FtpStream {
             .map_err(FtpError::ConnectionError)?;
 
         let mut ftp_stream = FtpStream {
-            reader: BufReader::new(DataStream::Tcp(stream)),
+            reader: BufReader::new(DataStream::Tcp { stream }),
             #[cfg(feature = "secure")]
             ssl_cfg: None,
             welcome_msg: None,
@@ -100,7 +100,7 @@ impl FtpStream {
             .map_err(|e| FtpError::SecureError(format!("{}", e)))?;
 
         let mut secured_ftp_tream = FtpStream {
-            reader: BufReader::new(DataStream::Ssl(stream)),
+            reader: BufReader::new(DataStream::Ssl { stream }),
             ssl_cfg: Some((config, domain)),
             welcome_msg: None,
         };
@@ -143,7 +143,9 @@ impl FtpStream {
         self.write_str("CCC\r\n").await?;
         self.read_response(status::COMMAND_OK).await?;
         let plain_ftp_stream = FtpStream {
-            reader: BufReader::new(DataStream::Tcp(self.reader.into_inner().into_tcp_stream())),
+            reader: BufReader::new(DataStream::Tcp {
+                stream: self.reader.into_inner().into_tcp_stream(),
+            }),
             ssl_cfg: None,
             welcome_msg: None,
         };
@@ -166,13 +168,13 @@ impl FtpStream {
                 return connector
                     .connect(domain.to_owned(), stream)
                     .await
-                    .map(|stream| DataStream::Ssl(stream))
+                    .map(|stream| DataStream::Ssl { stream })
                     .map_err(|e| FtpError::SecureError(format!("{}", e)));
             }
             _ => {}
         };
 
-        Ok(DataStream::Tcp(stream))
+        Ok(DataStream::Tcp { stream })
     }
 
     /// Returns a reference to the underlying TcpStream.
